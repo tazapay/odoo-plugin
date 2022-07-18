@@ -1,1 +1,1 @@
-# odoo workflow test
+# odoo plugin readme
