@@ -27,8 +27,6 @@ class TazaPayController(http.Controller):
         "/payment/tazapay/error",
     ], type="http", auth="public", csrf=False, cors="*")
     def process_tazapay_payment(self, **post):
-        data = json.loads(request.httprequest.data)
-        _logger.info('Tazapay: entering form_feedback with post data %s', pprint.pformat(data))  # debug
         last_tx_id = request.env['payment.transaction'].browse(request.session.get('__website_sale_last_tx_id'))
         last_tx_id.sudo()._escrow_payment_verification(data=last_tx_id)
         request.env['payment.transaction'].sudo().form_feedback(post, 'tazapay')
