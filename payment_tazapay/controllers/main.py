@@ -38,11 +38,13 @@ class TazaPayController(http.Controller):
         "/payment/tazapay/return",
     ], type="json", auth="public", csrf=False, cors="*")
     def tazapay_webhook(self, **post):
+        data = json.loads(request.httprequest.data)
+        _logger.info('Tazapay sends back data===: %s', pprint.pformat(data))
         _logger.info('Tazapay sends back data: %s', pprint.pformat(post))
         if post:
             txn_no = post.get('txn_no')
-            transaction_id = request.env['payment.transaction'].sudo().search([('acquirer_reference', '=', txn_no)], limit=1)
-            # if post.get('state') == 'Escrow_Funds_Re'
+            transaction_id = request.env['payment.transaction'].sudo().search([('acquirer_reference', '=', txn_no)],
+                                                                              limit=1)
             transaction_id._set_transaction_done()
             transaction_id.execute_callback()
             if transaction_id.payment_token_id:
