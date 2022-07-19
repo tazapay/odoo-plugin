@@ -50,6 +50,7 @@ class TazaPayController(http.Controller):
                     'paid_amount': payment.get('paid_amount'),
                     'collection_currency': currency_id.id if currency_id else False,
                     'payable_amount': payment.get('payable_amount'),
+                    'txt_state': data.get('state')
                 })
                 transaction_id._set_transaction_done()
                 transaction_id.execute_callback()
