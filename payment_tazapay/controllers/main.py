@@ -27,18 +27,26 @@ class TazaPayController(http.Controller):
         "/payment/tazapay/error",
     ], type="http", auth="public", csrf=False, cors="*")
     def process_tazapay_payment(self, **post):
+        _logger.info('Tazapay: entering form_feedback with post data %s', pprint.pformat(post))  # debug
         last_tx_id = request.env['payment.transaction'].browse(request.session.get('__website_sale_last_tx_id'))
         last_tx_id.sudo()._escrow_payment_verification(data=last_tx_id)
-        _logger.info('Tazapay: entering form_feedback with post data %s', pprint.pformat(post))  # debug
         request.env['payment.transaction'].sudo().form_feedback(post, 'buckaroo')
         post = {key.upper(): value for key, value in post.items()}
         return werkzeug.utils.redirect('/payment/process')
 
     @http.route([
         "/payment/tazapay/return",
-    ], type="http", auth="public", csrf=False, cors="*")
+    ], type="json", auth="public", csrf=False, cors="*")
     def tazapay_webhook(self, **post):
         _logger.info('Tazapay sends back data: %s', pprint.pformat(post))
+        txn_no = post.get('txn_no')
+        transaction_id = request.env['payment.transaction'].sudo().search([('txn_no', '=', txn_no)], limit=1)
+        # if post.get('state') == 'Escrow_Funds_Re'
+        transaction_id._set_transaction_done()
+        transaction_id.execute_callback()
+        if transaction_id.payment_token_id:
+            transaction_id.payment_token_id.verified = True
+        return True
 
 
 class WebsiteSaleExtended(WebsiteSale):
