@@ -44,7 +44,7 @@ class TazaPayController(http.Controller):
                                                                               limit=1)
             if data.get('state') == 'Payment_Received':
                 payment = data.get('payment')
-                currency_id = self.env['res.currency'].search([('name', '=', payment.get('collection_currency'))])
+                currency_id = request.env['res.currency'].search([('name', '=', payment.get('collection_currency'))])
                 transaction_id.sudo().write({
                     'collection_method': payment.get('collection_method'),
                     'paid_amount': payment.get('paid_amount'),
