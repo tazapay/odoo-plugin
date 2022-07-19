@@ -27,29 +27,37 @@ class TazaPayController(http.Controller):
         "/payment/tazapay/error",
     ], type="http", auth="public", csrf=False, cors="*")
     def process_tazapay_payment(self, **post):
-        _logger.info('Tazapay: entering form_feedback with post data %s', pprint.pformat(post))  # debug
+        data = json.loads(request.httprequest.data)
+        _logger.info('Tazapay: entering form_feedback with post data %s', pprint.pformat(data))  # debug
         last_tx_id = request.env['payment.transaction'].browse(request.session.get('__website_sale_last_tx_id'))
         last_tx_id.sudo()._escrow_payment_verification(data=last_tx_id)
-        request.env['payment.transaction'].sudo().form_feedback(post, 'buckaroo')
-        post = {key.upper(): value for key, value in post.items()}
+        request.env['payment.transaction'].sudo().form_feedback(post, 'tazapay')
         return werkzeug.utils.redirect('/payment/process')
 
     @http.route([
         "/payment/tazapay/return",
-    ], type="json", auth="public", csrf=False, cors="*")
+    ], type="json", auth="public", csrf=False, cors="*", methods=['POST'])
     def tazapay_webhook(self, **post):
         data = json.loads(request.httprequest.data)
-        _logger.info('Tazapay sends back data===: %s', pprint.pformat(data))
-        _logger.info('Tazapay sends back data: %s', pprint.pformat(post))
-        if post:
-            txn_no = post.get('txn_no')
+        _logger.info('Tazapay sends back data: %s', pprint.pformat(data))
+        if data:
+            txn_no = data.get('txn_no')
             transaction_id = request.env['payment.transaction'].sudo().search([('acquirer_reference', '=', txn_no)],
                                                                               limit=1)
-            transaction_id._set_transaction_done()
-            transaction_id.execute_callback()
-            if transaction_id.payment_token_id:
-                transaction_id.payment_token_id.verified = True
-            return True
+            if data.get('Payment_Received'):
+                payment = data.get('payment')
+                currency_id = self.env['res.currency'].search([('name', '=', payment.get('collection_currency'))])
+                transaction_id.sudo().write({
+                    'collection_method': payment.get('collection_method'),
+                    'paid_amount': payment.get('paid_amount'),
+                    'collection_currency': currency_id.id if currency_id else False,
+                    'payable_amount': payment.get('payable_amount'),
+                })
+                transaction_id._set_transaction_done()
+                transaction_id.execute_callback()
+                if transaction_id.payment_token_id:
+                    transaction_id.payment_token_id.verified = True
+        return True
 
 
 class WebsiteSaleExtended(WebsiteSale):

@@ -163,10 +163,11 @@ class PaymentTransactionRave(models.Model):
                 'txt_state': tree["data"]["state"],
             }
             if tree_data.get("collection_method"):
+                currency_id = self.env['res.currency'].search([
+                        ('name', '=', tree["data"]["payment"]["collection_currency"])])
                 order_val.update({
                     'collection_method': tree["data"]["payment"]["collection_method"],
-                    'collection_currency': self.env['res.currency'].search([
-                        ('name', '=', tree["data"]["payment"]["collection_currency"])]),
+                    'collection_currency': currency_id.id if currency_id else False,
                     'payable_amount': tree["data"]["payment"]["payable_amount"],
                     'paid_amount': tree["data"]["payment"]["paid_amount"],
                 })
@@ -205,10 +206,11 @@ class PaymentTransactionRave(models.Model):
                 'txt_state': tree["data"]["state"],
             }
             if tree_data.get("collection_method"):
+                currency_id = self.env['res.currency'].search([
+                        ('name', '=', tree["data"]["payment"]["collection_currency"])])
                 order_val.update({
                     'collection_method': tree["data"]["payment"]["collection_method"],
-                    'collection_currency': self.env['res.currency'].search([
-                        ('name', '=', tree["data"]["payment"]["collection_currency"])]),
+                    'collection_currency': currency_id.id if currency_id else False,
                     'payable_amount': tree["data"]["payment"]["payable_amount"],
                     'paid_amount': tree["data"]["payment"]["paid_amount"],
                 })
