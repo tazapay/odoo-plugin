@@ -1,1 +1,1 @@
-# odoo plugin readme
+# odoo plugin
