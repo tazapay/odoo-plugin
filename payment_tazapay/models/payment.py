@@ -97,9 +97,10 @@ class AcquirerTazapay(models.Model):
             'initiated_by': seller_id,
             'buyer_id': buyer_id,
             'seller_id': seller_id,
-            'txn_description': 'Sales on Odoo',
+            'txn_description': 'Odoo',
             'invoice_currency': currency_code,
             'invoice_amount': amount,
+            'transaction_source': 'Odoo'
         }
         escrow_request = self._tazapay_request(endpoint='/v1/escrow', method='POST', data=json.dumps(data))
         response = json.loads(escrow_request.text)
