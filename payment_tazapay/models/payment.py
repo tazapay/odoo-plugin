@@ -39,6 +39,7 @@ class AcquirerTazapay(models.Model):
     ], ondelete={'tazapay': 'set default'})
     tazapay_api_key = fields.Char(required_if_provider='tazapay', groups='base.group_user')
     tazapay_api_secret = fields.Char(required_if_provider='tazapay', groups='base.group_user')
+    tazapay_email = fields.Char(string="Tazapay email")
 
     @api.model
     def _get_tazapay_urls(self, environment):
@@ -92,12 +93,16 @@ class AcquirerTazapay(models.Model):
         tazapay_tx_values = dict(values)
         return tazapay_tx_values
 
+    def _compute_description(self, sale_order):
+        return ', '.join([f"{line.product_uom_qty} x {line.product_id.name}" for line in sale_order.order_line])
+
     def _create_escrow(self, seller_id, buyer_id, currency_code, amount):
+        order = request.website.sale_get_order()
         data = {
             'initiated_by': seller_id,
             'buyer_id': buyer_id,
             'seller_id': seller_id,
-            'txn_description': 'Odoo',
+            'txn_description': self._compute_description(sale_order=order),
             'invoice_currency': currency_code,
             'invoice_amount': amount,
             'transaction_source': 'Odoo'

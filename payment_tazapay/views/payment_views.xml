@@ -9,6 +9,7 @@
                 <group attrs="{'invisible': [('provider', '!=', 'tazapay')]}">
                     <field name="tazapay_api_key" attrs="{'required':[ ('provider', '=', 'tazapay'), ('state', '!=', 'disabled')]}" password="True"/>
                     <field name="tazapay_api_secret" attrs="{'required':[ ('provider', '=', 'tazapay'), ('state', '!=', 'disabled')]}" password="True"/>
+                    <field name="tazapay_email" attrs="{'required':[ ('provider', '=', 'tazapay'), ('state', '!=', 'disabled')]}"/>
                 </group>
             </xpath>
         </field>
