@@ -42,7 +42,7 @@ class AcquirerTazapay(models.Model):
 
     @api.model
     def _get_tazapay_urls(self, environment):
-        if environment == 'prod':
+        if environment == 'enabled':
             return {
                 'tazapay_form_url': 'https://api.tazapay.com',
             }
