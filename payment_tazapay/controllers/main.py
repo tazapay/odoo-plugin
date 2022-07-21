@@ -136,18 +136,18 @@ class WebsiteSaleExtended(WebsiteSale):
         return partner_id
 
     def _get_shop_payment_values(self, order, **kwargs):
-        # if not order.partner_id.tazapay_user_id or not order.company_id.partner_id.tazapay_user_id:
-        data = {
-            'name': order.partner_id.name,
-            'email': order.partner_id.email,
-            'country': order.partner_id.country_id.code,
-            'contact_number': order.partner_id.phone
-        }
-        buyer_id, seller_id = self.buyer_seller_handshake(values=data)
-        # update seller's uuid
-        request.website.company_id.partner_id.sudo().write({'tazapay_user_id': seller_id})
-        # update buyer's uuid
-        order.partner_id.sudo().write({'tazapay_user_id': buyer_id})
+        if not order.partner_id.tazapay_user_id or not order.company_id.partner_id.tazapay_user_id:
+            data = {
+                'name': order.partner_id.name,
+                'email': order.partner_id.email,
+                'country': order.partner_id.country_id.code,
+                'contact_number': order.partner_id.phone
+            }
+            buyer_id, seller_id = self.buyer_seller_handshake(values=data)
+            # update seller's uuid
+            request.website.company_id.partner_id.sudo().write({'tazapay_user_id': seller_id})
+            # update buyer's uuid
+            order.partner_id.sudo().write({'tazapay_user_id': buyer_id})
 
         values = dict(
             website_sale_order=order,
