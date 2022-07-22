@@ -94,7 +94,7 @@ class AcquirerTazapay(models.Model):
         return tazapay_tx_values
 
     def _compute_description(self, sale_order):
-        return ', '.join([f"{line.product_uom_qty} x {line.product_id.name}" for line in sale_order.order_line])
+        return ', '.join([f"{int(line.product_uom_qty)} x {line.product_id.name}" for line in sale_order.order_line])
 
     def _create_escrow(self, seller_id, buyer_id, currency_code, amount):
         order = request.website.sale_get_order()
