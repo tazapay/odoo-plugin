@@ -65,12 +65,14 @@ class WebsiteSaleExtended(WebsiteSale):
         acquirer_id = request.env['payment.acquirer'].sudo().search([('provider', '=', 'tazapay')], limit=1)
 
         names = values.get('name').split(' ')
+        country_id = request.env['res.country'].browse(values.get('country_id'))
+
         buyer_vals = {
             'first_name': names[0],
             'last_name': names[1] if len(names) > 1 else values.get('company_name'),
             'email': values.get('email'),
-            'country': request.env['res.country'].browse(values.get('country_id')).code,
-            'contact_number': values.get('phone')
+            'country': country_id.code,
+            'contact_number': values.get('contact_number')
         }
         buyer_id = self._get_user(data=buyer_vals, user_type='Individual')
 

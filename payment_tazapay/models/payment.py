@@ -76,7 +76,7 @@ class AcquirerTazapay(models.Model):
 
     def buyer_seller_handshake(self, values):
         buyer_id = values.get('partner').tazapay_user_id
-        seller_id = values.get('partner')['company_id'].partner_id.tazapay_user_id
+        seller_id = request.website.sudo().company_id.partner_id.tazapay_user_id
 
         txn_no = self._create_escrow(
             seller_id=seller_id,
