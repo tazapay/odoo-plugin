@@ -91,11 +91,19 @@ class WebsiteSaleExtended(WebsiteSale):
         user_request = self._tazapay_request(endpoint=f"/v1/user/{data.get('email')}", method='GET')
         response = json.loads(user_request.text)
 
+        _logger.info(
+            'Response from Tazapay for user if user already exists. User %s of type %s ===== %s' %
+            (data.get('email'), user_type, pprint.pformat(user_request.text)))
+
         if response.get('status') == 'error':
             data.update({
                 'ind_bus_type': user_type,
             })
+            _logger.info("user data %s" % data)
             user_request = self._tazapay_request(data=json.dumps(data), endpoint='/v1/user', method='POST')
+            _logger.info(
+                'Response from Tazapay for user %s of type %s ===== %s' %
+                (data.get('email'), user_type, pprint.pformat(user_request.text)))
             response = json.loads(user_request.text)
             return response.get('data')['account_id']
         return response.get('data')['id']
@@ -114,13 +122,14 @@ class WebsiteSaleExtended(WebsiteSale):
         return resp
 
     def _checkout_form_save(self, mode, checkout, all_values):
-        buyer_id, seller_id = self.buyer_seller_handshake(values=checkout)
-        # update sellers uuid
-        request.website.company_id.partner_id.sudo().write({
-            'tazapay_user_id': seller_id
-        })
+        if checkout.get('email'):
+            buyer_id, seller_id = self.buyer_seller_handshake(values=checkout)
+            # update sellers uuid
+            request.website.company_id.partner_id.sudo().write({
+                'tazapay_user_id': seller_id
+            })
+            checkout['tazapay_user_id'] = buyer_id
 
-        checkout['tazapay_user_id'] = buyer_id
         Partner = request.env['res.partner']
         if mode[0] == 'new':
             partner_id = Partner.sudo().with_context(tracking_disable=True).create(checkout).id

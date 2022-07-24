@@ -97,6 +97,7 @@ class AcquirerTazapay(models.Model):
         return ', '.join([f"{int(line.product_uom_qty)} x {line.product_id.name}" for line in sale_order.order_line])
 
     def _create_escrow(self, seller_id, buyer_id, currency_code, amount):
+        _logger.info("Handshake between seller: %s and buyer: %s" % (seller_id, buyer_id))
         order = request.website.sale_get_order()
         data = {
             'initiated_by': seller_id,
@@ -128,6 +129,7 @@ class AcquirerTazapay(models.Model):
         }
         payment_request = self._tazapay_request(
             data=json.dumps(payment_data), endpoint='/v1/session/payment', method='POST')
+        _logger.info("Redirecting to tazapay: %s" % payment_request.text)
         response = json.loads(payment_request.text)
 
         redirect_url = response.get('data')['redirect_url']
