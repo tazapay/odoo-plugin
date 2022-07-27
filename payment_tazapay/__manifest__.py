@@ -8,6 +8,7 @@
     'version': '1.0',
     'author': 'Tazapay',
     'description': """Tazapay Payment Acquirer""",
+    'website': 'https://tazapay.com/',
     'depends': ['payment'],
     'data': [
         'views/assets.xml',

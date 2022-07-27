@@ -25,10 +25,7 @@ from odoo.addons.payment.models.payment_acquirer import ValidationError
 from odoo.addons.payment_tazapay.controllers.main import TazaPayController
 from odoo.tools.float_utils import float_compare
 
-
 _logger = logging.getLogger(__name__)
-
-escrow_txn_no = ''
 
 
 class AcquirerTazapay(models.Model):
@@ -74,65 +71,42 @@ class AcquirerTazapay(models.Model):
         signature = base64.urlsafe_b64encode(str.encode(h.hexdigest()))
         return signature, salt, timestamp
 
-    def buyer_seller_handshake(self, values):
-        buyer_id = values.get('partner').tazapay_user_id
-        seller_id = request.website.sudo().company_id.partner_id.tazapay_user_id
-
-        txn_no = self._create_escrow(
-            seller_id=seller_id,
-            buyer_id=buyer_id, amount=values.get('amount'),
-            currency_code=values.get('currency').name
-        )
-        return txn_no
-
     def tazapay_form_generate_values(self, values):
-        global escrow_txn_no
-
-        escrow_txn_no = self.buyer_seller_handshake(values=values)
-
         tazapay_tx_values = dict(values)
         return tazapay_tx_values
 
     def _compute_description(self, sale_order):
         return ', '.join([f"{int(line.product_uom_qty)} x {line.product_id.name}" for line in sale_order.order_line])
 
-    def _create_escrow(self, seller_id, buyer_id, currency_code, amount):
-        _logger.info("Handshake between seller: %s and buyer: %s" % (seller_id, buyer_id))
+    def _tazapay_checkout(self):
         order = request.website.sale_get_order()
         data = {
-            'initiated_by': seller_id,
-            'buyer_id': buyer_id,
-            'seller_id': seller_id,
-            'txn_description': self._compute_description(sale_order=order),
-            'invoice_currency': currency_code,
-            'invoice_amount': amount,
-            'transaction_source': 'Odoo'
+            "buyer": {
+                "email": order.partner_id.email,
+                "country": order.partner_id.country_id.code or order.company_id.country_id.code,
+                "ind_bus_type": "Individual",
+                "first_name": order.partner_id.name.split(' ')[0],
+                "last_name": order.partner_id.name.split(' ')[1] if len(order.partner_id.name.split(' ')) > 1 else order.partner_id.name
+            },
+            "invoice_currency": order.currency_id.name,
+            "invoice_amount": order.amount_total,
+            "txn_description": order.name,
+            "complete_url": urls.url_join(self.get_base_url(), TazaPayController._complete_url),
+            "error_url": urls.url_join(self.get_base_url(), TazaPayController._error_url),
+            "callback_url": urls.url_join(self.get_base_url(), TazaPayController._callback_url),
+            "transaction_source": "Odoo"
         }
-        escrow_request = self._tazapay_request(endpoint='/v1/escrow', method='POST', data=json.dumps(data))
-        response = json.loads(escrow_request.text)
-        if response.get('status') == 'success':
-            return response.get('data')['txn_no']
-        else:
-            return False
+        checkout_request = self._tazapay_request(endpoint='/v1/checkout', method='POST', data=json.dumps(data))
+        response = json.loads(checkout_request.text)
+        return response.get('data')
 
     def tazapay_get_form_action_url(self):
-        self.ensure_one()
+        checkout_res = self._tazapay_checkout()
         last_tx_id = request.session.get('__website_sale_last_tx_id')
         self.env['payment.transaction'].browse(last_tx_id).write({
-            'acquirer_reference': escrow_txn_no
+            'acquirer_reference': checkout_res.get('txn_no')
         })
-        payment_data = {
-            'txn_no': escrow_txn_no,
-            'complete_url': urls.url_join(self.get_base_url(), TazaPayController._complete_url),
-            'error_url': urls.url_join(self.get_base_url(), TazaPayController._error_url),
-            'callback_url': urls.url_join(self.get_base_url(), TazaPayController._callback_url)
-        }
-        payment_request = self._tazapay_request(
-            data=json.dumps(payment_data), endpoint='/v1/session/payment', method='POST')
-        _logger.info("Redirecting to tazapay: %s" % payment_request.text)
-        response = json.loads(payment_request.text)
-
-        redirect_url = response.get('data')['redirect_url']
+        redirect_url = checkout_res.get('redirect_url')
         return redirect_url
 
 
@@ -161,7 +135,6 @@ class PaymentTransactionRave(models.Model):
         status = tree.get('status')
         amount = tree["data"]["invoice_amount"]
         currency = tree["data"]["invoice_currency"]
-
         tree_data = tree.get("data")
 
         if status == 'success' and amount == data.amount and currency == data.currency_id.name:
@@ -170,14 +143,15 @@ class PaymentTransactionRave(models.Model):
                 'acquirer_reference': tree["data"]["txn_no"],
                 'txt_state': tree["data"]["state"],
             }
-            if tree_data.get("collection_method"):
+            payment_tree = tree_data.get('payment')
+            if payment_tree.get("collection_method"):
                 currency_id = self.env['res.currency'].search([
-                        ('name', '=', tree["data"]["payment"]["collection_currency"])])
+                        ('name', '=', payment_tree.get("collection_currency"))])
                 order_val.update({
-                    'collection_method': tree["data"]["payment"]["collection_method"],
+                    'collection_method': payment_tree.get("collection_method"),
                     'collection_currency': currency_id.id if currency_id else False,
-                    'payable_amount': tree["data"]["payment"]["payable_amount"],
-                    'paid_amount': tree["data"]["payment"]["paid_amount"],
+                    'payable_amount': payment_tree.get("payable_amount"),
+                    'paid_amount': payment_tree.get("paid_amount"),
                 })
 
             self.write(order_val)
@@ -213,14 +187,15 @@ class PaymentTransactionRave(models.Model):
                 'acquirer_reference': tree["data"]["txn_no"],
                 'txt_state': tree["data"]["state"],
             }
-            if tree_data.get("collection_method"):
+            payment_tree = tree_data.get('payment')
+            if payment_tree.get("collection_method"):
                 currency_id = self.env['res.currency'].search([
-                        ('name', '=', tree["data"]["payment"]["collection_currency"])])
+                    ('name', '=', payment_tree.get("collection_currency"))])
                 order_val.update({
-                    'collection_method': tree["data"]["payment"]["collection_method"],
+                    'collection_method': payment_tree.get("collection_method"),
                     'collection_currency': currency_id.id if currency_id else False,
-                    'payable_amount': tree["data"]["payment"]["payable_amount"],
-                    'paid_amount': tree["data"]["payment"]["paid_amount"],
+                    'payable_amount': payment_tree.get("payable_amount"),
+                    'paid_amount': payment_tree.get("paid_amount"),
                 })
 
             self.write(order_val)
