@@ -27,6 +27,7 @@ class TazaPayController(http.Controller):
         "/payment/tazapay/error",
     ], type="http", auth="public", csrf=False, cors="*")
     def process_tazapay_payment(self, **post):
+        _logger.info('Tazapay redirects peacefully')
         last_tx_id = request.env['payment.transaction'].browse(request.session.get('__website_sale_last_tx_id'))
         last_tx_id.sudo()._escrow_payment_verification(data=last_tx_id)
         request.env['payment.transaction'].sudo().form_feedback(post, 'tazapay')

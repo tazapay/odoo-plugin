@@ -151,7 +151,7 @@ class PaymentTransactionRave(models.Model):
                 'txt_state': tree["data"]["state"],
             }
             payment_tree = tree_data.get('payment')
-            if payment_tree.get("collection_method"):
+            if payment_tree and payment_tree.get("collection_method"):
                 currency_id = self.env['res.currency'].search([
                         ('name', '=', payment_tree.get("collection_currency"))])
                 order_val.update({
@@ -195,7 +195,7 @@ class PaymentTransactionRave(models.Model):
                 'txt_state': tree["data"]["state"],
             }
             payment_tree = tree_data.get('payment')
-            if payment_tree.get("collection_method"):
+            if payment_tree and payment_tree.get("collection_method"):
                 currency_id = self.env['res.currency'].search([
                     ('name', '=', payment_tree.get("collection_currency"))])
                 order_val.update({
