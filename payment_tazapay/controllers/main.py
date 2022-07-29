@@ -54,6 +54,7 @@ class TazaPayController(http.Controller):
                 })
                 transaction_id._set_transaction_done()
                 transaction_id.execute_callback()
+                transaction_id._post_process_after_done()
                 if transaction_id.payment_token_id:
                     transaction_id.payment_token_id.verified = True
         return True

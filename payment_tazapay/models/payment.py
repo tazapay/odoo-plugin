@@ -90,7 +90,8 @@ class AcquirerTazapay(models.Model):
             },
             "invoice_currency": order.currency_id.name,
             "invoice_amount": order.amount_total,
-            "txn_description": order.name,
+            "txn_description": self.name,
+            # "txn_description": self._compute_description(order),
             "complete_url": urls.url_join(self.get_base_url(), TazaPayController._complete_url),
             "error_url": urls.url_join(self.get_base_url(), TazaPayController._error_url),
             "callback_url": urls.url_join(self.get_base_url(), TazaPayController._callback_url),
@@ -98,6 +99,7 @@ class AcquirerTazapay(models.Model):
         }
         checkout_request = self._tazapay_request(endpoint='/v1/checkout', method='POST', data=json.dumps(data))
         response = json.loads(checkout_request.text)
+        _logger.info('Tazapay before payment: %s', pprint.pformat(response))
         return response.get('data')
 
     def tazapay_get_form_action_url(self):
@@ -122,6 +124,7 @@ class PaymentTransactionRave(models.Model):
     def _escrow_payment_verification(self, data):
         txn_no = data.sudo().acquirer_reference
         payment_status = self.acquirer_id.sudo()._tazapay_request(data=None, method='GET', endpoint=f"/v1/escrow/{txn_no}")
+        _logger.info('Tazapay sends back data payment_status: %s', pprint.pformat(payment_status.json()))
         return self._tazapay_validate_tree(payment_status.json(), data)
 
     def _tazapay_validate_tree(self, tree, data):
@@ -207,3 +210,5 @@ class PaymentTransactionRave(models.Model):
             if self.payment_token_id:
                 self.payment_token_id.verified = True
             return True
+
+

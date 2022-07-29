@@ -9,7 +9,7 @@
     'author': 'Tazapay',
     'description': """Tazapay Payment Acquirer""",
     'website': 'https://tazapay.com/',
-    'depends': ['payment'],
+    'depends': ['payment', 'sale'],
     'data': [
         'views/assets.xml',
         'views/payment_views.xml',
