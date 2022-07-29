@@ -80,6 +80,9 @@ class AcquirerTazapay(models.Model):
 
     def _tazapay_checkout(self):
         order = request.website.sale_get_order()
+        _logger.info('order partner email %s', order.partner_id.email)
+        _logger.info('order partner country_id %s', order.partner_id.country_id.code)
+        _logger.info('order partner name %s', order.partner_id.country_id.name)
         data = {
             "buyer": {
                 "email": order.partner_id.email,
