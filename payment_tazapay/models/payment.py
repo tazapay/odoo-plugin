@@ -100,6 +100,7 @@ class AcquirerTazapay(models.Model):
             "callback_url": urls.url_join(self.get_base_url(), TazaPayController._callback_url),
             "transaction_source": "Odoo"
         }
+        _logger.info('Tazapay data: %s', pprint.pformat(data))
         checkout_request = self._tazapay_request(endpoint='/v1/checkout', method='POST', data=json.dumps(data))
         response = json.loads(checkout_request.text)
         _logger.info('Tazapay before payment: %s', pprint.pformat(response))
