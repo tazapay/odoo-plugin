@@ -85,7 +85,7 @@ class AcquirerTazapay(models.Model):
         _logger.info('order partner name %s', order.partner_id.country_id.name)
         data = {
             "buyer": {
-                "email": order.partner_id.email,
+                "email": order.partner_id.email.strip(),
                 "country": order.partner_id.country_id.code or order.company_id.country_id.code,
                 "ind_bus_type": "Individual",
                 "first_name": order.partner_id.name.split(' ')[0],
