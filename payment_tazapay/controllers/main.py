@@ -43,7 +43,7 @@ class TazaPayController(http.Controller):
             txn_no = data.get('txn_no')
             transaction_id = request.env['payment.transaction'].sudo().search([('acquirer_reference', '=', txn_no)],
                                                                               limit=1)
-            if data.get('state') == 'Payment_Received':
+            if data.get('state') in ['Payment_Received', 'Payout_Completed']:
                 payment = data.get('payment')
                 currency_id = request.env['res.currency'].search([('name', '=', payment.get('collection_currency'))])
                 transaction_id.sudo().write({
