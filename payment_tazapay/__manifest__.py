@@ -16,7 +16,7 @@
         'views/payment_tazapay_templates.xml',
         'data/payment_acquirer_data.xml',
     ],
-    'images': ['static/description/icon.png', 'static/description/banner.png'],
+    'images': ['image/main_screenshot.png', 'static/description/icon.png', 'static/description/banner.png'],
     'installable': True,
     'application': True,
     'post_init_hook': 'create_missing_journal_for_acquirers',
